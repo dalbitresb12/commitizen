@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import warnings
 from logging import getLogger
 
@@ -65,6 +66,7 @@ class Bump:
                 if arguments[key] is not None
             },
         }
+        self.path_prefix = config.settings.get("path_prefix", None)
         self.cz = factory.commiter_factory(self.config)
         self.changelog_flag = arguments["changelog"]
         self.changelog_config = self.config.settings.get("update_changelog_on_bump")
@@ -133,6 +135,19 @@ class Bump:
             commits, regex=bump_pattern, increments_map=bump_map
         )
         return increment
+
+    def filter_by_path(self, commit: git.GitCommit) -> bool:
+        if not self.path_prefix:
+            return True
+
+        path_regex = re.compile(f"^{self.path_prefix}")
+
+        files = git.get_filenames_in_commit(commit.rev)
+        for file in files:
+            if path_regex.match(file):
+                return True
+
+        return False
 
     def __call__(self) -> None:  # noqa: C901
         """Steps executed to bump."""
@@ -247,6 +262,9 @@ class Bump:
                     commits = git.get_commits()
                 else:
                     commits = git.get_commits(current_tag_version)
+
+                if self.path_prefix:
+                    commits = list(filter(self.filter_by_path, commits))
 
                 # No commits, there is no need to create an empty tag.
                 # Unless we previously had a prerelease.
