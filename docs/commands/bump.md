@@ -429,6 +429,19 @@ Supported variables:
 
 ---
 
+### `path_prefix`
+
+Allows filtering commits to be used for calculating the bump so that only commits affecting the specified path are considered.
+
+For example, if you want to bump the version based only on changes in the `src` directory, you can set:
+
+```toml
+[tool.commitizen]
+path_prefix = "src"
+```
+
+This ensures that only commits modifying files within the `src` directory will be taken into account for version bumping.
+
 ### `version_files` \*
 
 It is used to identify the files which should be updated with the new version.
