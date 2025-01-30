@@ -1543,3 +1543,20 @@ def test_bump_get_next__no_eligible_commits_raises(mocker: MockFixture):
 
     with pytest.raises(NoneIncrementExit):
         cli.main()
+
+
+@pytest.mark.usefixtures("tmp_commitizen_project")
+def test_bump_path_filter(config_path: str, mocker: MockFixture) -> None:
+    pkg1_file = Path.cwd() / "packages" / "pkg1" / "file.txt"
+    pkg1_file.parent.mkdir(parents=True)
+    pkg2_file = Path.cwd() / "packages" / "pkg2" / "file.txt"
+    pkg2_file.parent.mkdir(parents=True)
+    create_file_and_commit("fix: update file", str(pkg1_file))
+    create_file_and_commit("feat!: new file", str(pkg2_file))
+    with Path(config_path).open("a") as fp:
+        fp.write("path_prefix = 'packages/pkg1'\n")
+    testargs = ["cz", "bump", "--yes"]
+    mocker.patch.object(sys, "argv", testargs)
+    cli.main()
+    tag_exists = git.tag_exist("0.1.1")
+    assert tag_exists is True
